@@ -3,18 +3,25 @@ const mainServer = 'https://cr.onestay.moe/getid';
 const backupServer = 'https://crunchy.rubbix.net/';
 
 function setUsCookie(tld) {
-	console.log('Setting cookie...');
-	console.log('Trying to fetch main server...');
+	chrome.cookies.get({url: `http://crunchyroll${tld}/`, name: 'c_locale'}, (c) => {
 
-	fetchServer(tld, mainServer)
-	.then(sessId => setCookie(sessId, tld))
-	.catch((e) => {
-		console.log(`Got error ${e}. Trying backup server...`);
-		fetchServer(tld, backupServer)
+		if(c && c.value==="enUS"){
+			return; 
+		}
+
+		console.log('Setting cookie...');
+		console.log('Trying to fetch main server...');
+
+		fetchServer(tld, mainServer)
 		.then(sessId => setCookie(sessId, tld))
-		.catch((_e) => {
-			createError(`Main server and backup server couldn't get an session id`);
-			console.log(_e);
+		.catch((e) => {
+			console.log(`Got error ${e}. Trying backup server...`);
+			fetchServer(tld, backupServer)
+			.then(sessId => setCookie(sessId, tld))
+			.catch((_e) => {
+				createError(`Main server and backup server couldn't get an session id`);
+				console.log(_e);
+			});
 		});
 	});
 }
@@ -46,7 +53,7 @@ function setCookie(id, tld) {
 
 	// setting the cookie and reloading the page when it's done
 	chrome.cookies.set({ url: `http://.crunchyroll${tld}/`, name: 'sess_id', value: id }, () => {
-		chrome.cookies.set({ url: `http://.crunchyroll${tld}/`, name: 'c_locale', value: 'enUS' }, () => {
+		chrome.cookies.set({ url: `http://.crunchyroll${tld}/`, name: 'c_locale', value: 'enUS', expirationDate: (new Date().getTime()/1000) + 2592000 }, () => {
 			chrome.tabs.reload();
 		});
 	});
